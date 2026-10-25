@@ -40,6 +40,7 @@
 #   PCT=<cmd>                   pct command to use (default: pct)
 #   KERNEL_MODULES_DIR=<dir>    kernel modules tree (default: /lib/modules)
 #   BOOT_DIR=<dir>              kernel image directory (default: /boot)
+#   PCI_DEVICES_DIR=<dir>       PCI device list (default: /sys/bus/pci/devices)
 #   CT_TMP_DIR=<dir>            directory inside the container used for the copied runfile
 #                               (default: /tmp)
 #
@@ -52,6 +53,7 @@ RUNFILE_PATTERN="NVIDIA-Linux-x86_64-*.run"
 PCT="${PCT:-pct}"
 KERNEL_MODULES_DIR="${KERNEL_MODULES_DIR:-/lib/modules}"
 BOOT_DIR="${BOOT_DIR:-/boot}"
+PCI_DEVICES_DIR="${PCI_DEVICES_DIR:-/sys/bus/pci/devices}"
 CT_TMP_DIR="${CT_TMP_DIR:-/tmp}"
 DEFAULT_RUN_DIRS=(/root /opt /usr/local/src /srv /var/lib/vz/dump)
 DEFAULT_HOST_ARGS=(--silent --no-x-check --no-nouveau-check)
@@ -160,6 +162,12 @@ kernel_module_version() {
 }
 
 host_has_nvidia_gpu() {
+  local vendor_file
+  for vendor_file in "$PCI_DEVICES_DIR"/*/vendor; do
+    if [[ -r $vendor_file ]] && [[ $(<"$vendor_file") == 0x10de ]]; then
+      return 0
+    fi
+  done
   if compgen -G '/dev/nvidia*' >/dev/null 2>&1; then
     return 0
   fi

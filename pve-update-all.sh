@@ -32,6 +32,15 @@ function nvidia_container_wanted() {
 function refresh_nvidia_driver() {
   local mode=$1
   local container=${2:-}
+  local -a hook_env=()
+
+  # These calls are specifically for a configured NVIDIA host/container. Don't gate them on
+  # /dev/nvidia* or container library visibility: those can be absent precisely because the
+  # kernel modules have just been replaced.
+  case $mode in
+    host) hook_env+=(NVIDIA_FORCE_GPU_CHECK=1) ;;
+    container) hook_env+=(NVIDIA_CT_FORCE=1) ;;
+  esac
 
   if [ ! -f "$nvidia_hook" ]; then
     echo "  Warning: $nvidia_hook not found, skipping the NVIDIA driver refresh"
@@ -45,7 +54,7 @@ function refresh_nvidia_driver() {
 
   echo "  Refreshing the NVIDIA driver ($mode${container:+ for container $container})..."
   # the driver refresh must never abort the remaining updates
-  if timeout "$nvidia_hook_timeout" bash "$nvidia_hook" "$mode" $container; then
+  if timeout "$nvidia_hook_timeout" env "${hook_env[@]}" bash "$nvidia_hook" "$mode" $container; then
     echo "  NVIDIA driver refreshed"
   else
     local rc=$?
