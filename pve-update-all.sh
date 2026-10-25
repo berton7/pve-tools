@@ -85,8 +85,8 @@ function update_container() {
   # community-script containers ship their own update helper; use it instead of apt directly
   tags=$(pct config $container | sed -n 's/^tags: *//p')
   if [[ ";$tags;" == *";community-script;"* ]]; then
-    echo "  Detected community-script tag, running update command"
-    pct exec $container -- bash -c "update"
+    echo "  Detected community-script tag, running silent update command"
+    pct exec "$container" -- env PHS_SILENT=1 bash -c "update"
   # detect package manager
   elif pct exec $container -- bash -c "command -v apt-get" &>/dev/null; then
     echo "  Detected Debian-based system (apt)"
